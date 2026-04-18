@@ -27,7 +27,6 @@ jobs:
           mkdir -p Glow.app/Contents/MacOS
           cp glow Glow.app/Contents/MacOS/glow
           sed "s/__VERSION__/${VERSION}/g" glow.app/Contents/Info.plist > Glow.app/Contents/Info.plist
-          codesign --force --deep --sign - Glow.app
 
       - name: Package
         id: package
@@ -69,6 +68,11 @@ jobs:
             depends_on arch: :arm64
 
             app "Glow.app"
+
+            postflight do
+              system_command "/usr/bin/xattr",
+                             args: ["-dr", "com.apple.quarantine", "#{appdir}/Glow.app"]
+            end
 
             zap trash: [
               "~/Library/Preferences/com.glow.plist",
