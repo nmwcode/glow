@@ -256,8 +256,8 @@ let edrView = EDRView(frame: frame, multiplier: snappedBrightness)
 window.contentView = edrView
 window.orderFrontRegardless()
 
-_ = __NSApplicationLoad()
-NSApp.setActivationPolicy(.accessory)
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
 
 NotificationCenter.default.addObserver(
     forName: NSApplication.willTerminateNotification,
@@ -269,4 +269,4 @@ DispatchQueue.main.async {
     menuController = MenuController(edrView: edrView)
 }
 
-NSApp.run()
+app.run()
