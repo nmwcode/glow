@@ -27,13 +27,15 @@ Glow exits gracefully on displays without EDR support.
 
 ## Install
 
+**Homebrew (recommended):**
+```bash
+brew install nmwcode/tap/glow
+```
+
+**Manual:**
 ```bash
 git clone https://github.com/nmwcode/glow
 cd glow
-```
-
-**Run manually:**
-```bash
 swift glow.swift          # default: 200%
 swift glow.swift 1.5      # custom: 150%
 ```
