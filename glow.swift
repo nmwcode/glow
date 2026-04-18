@@ -13,6 +13,11 @@ import QuartzCore
 // Usage:
 //   swift glow.swift [brightness]    (default: 2.0, range: 1.0–3.0)
 
+// NSApp must be initialized before any other AppKit calls (NSScreen, NSWindow, etc.)
+// Otherwise AppKit initializes it in .regular mode and setActivationPolicy(.accessory) is ignored.
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
+
 let brightnessKey = "brightness"
 let defaults = UserDefaults(suiteName: "com.glow")!
 
@@ -238,7 +243,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuController: MenuController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let frame = NSScreen.main!.frame
+        let frame = NSScreen.main!.visibleFrame
         let snappedBrightness = brightnessPresets.map(\.value)
             .min(by: { abs($0 - initialBrightness) < abs($1 - initialBrightness) }) ?? 2.0
 
@@ -269,8 +274,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
 let delegate = AppDelegate()
 app.delegate = delegate
 app.run()
