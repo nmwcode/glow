@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile
+        run: |
+          swiftc -O -o glow glow.swift \
+            -framework Cocoa \
+            -framework Metal \
+            -framework MetalKit \
+            -framework QuartzCore
+
+      - name: Package
+        id: package
+        run: |
+          tar -czf glow-macos-arm64.tar.gz glow
+          echo "sha256=$(shasum -a 256 glow-macos-arm64.tar.gz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            glow-macos-arm64.tar.gz
+
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN not set — skipping tap update."
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA256="${{ steps.package.outputs.sha256 }}"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/nmwcode/homebrew-tap.git" tap
+          cat > tap/Formula/glow.rb << EOF
+          class Glow < Formula
+            desc "Boost XDR/HDR display brightness via Metal overlay"
+            homepage "https://github.com/nmwcode/glow"
+            url "https://github.com/nmwcode/glow/releases/download/v${VERSION}/glow-macos-arm64.tar.gz"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+
+            depends_on macos: :sonoma
+            depends_on arch: :arm64
+
+            def install
+              bin.install "glow"
+            end
+
+            test do
+              output = shell_output("#{bin}/glow 2>&1", 1)
+              assert_match(/EDR|XDR/, output)
+            end
+          end
+          EOF
+          cd tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/glow.rb
+          git commit -m "Update glow to v${VERSION}" || echo "No changes to commit"
+          git push
