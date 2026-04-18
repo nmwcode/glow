@@ -225,49 +225,52 @@ final class MenuController: NSObject {
         if let image = NSImage(systemSymbolName: name, accessibilityDescription: nil) {
             image.isTemplate = true
             statusItem.button?.image = image
-            statusItem.button?.title = ""
         } else {
-            statusItem.button?.title = edrView.isActive ? "V" : "v"
+            statusItem.button?.title = "☀"
         }
     }
 }
 
-// ── App init — must happen before any NSWindow creation ──
-let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
+// ── App delegate ──
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var window: NSWindow!
+    private var edrView: EDRView!
+    private var menuController: MenuController!
 
-// ── Overlay window ──
-let frame = screen.frame
-let window = NSWindow(
-    contentRect: frame,
-    styleMask: .borderless,
-    backing: .buffered,
-    defer: false
-)
-window.isOpaque = false
-window.backgroundColor = .clear
-window.ignoresMouseEvents = true
-window.level = .screenSaver
-window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-window.hasShadow = false
-window.hidesOnDeactivate = false
-window.animationBehavior = .none
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let frame = NSScreen.main!.frame
+        let snappedBrightness = brightnessPresets.map(\.value)
+            .min(by: { abs($0 - initialBrightness) < abs($1 - initialBrightness) }) ?? 2.0
 
-let snappedBrightness = brightnessPresets.map(\.value)
-    .min(by: { abs($0 - initialBrightness) < abs($1 - initialBrightness) }) ?? 2.0
+        edrView = EDRView(frame: frame, multiplier: snappedBrightness)
 
-let edrView = EDRView(frame: frame, multiplier: snappedBrightness)
-window.contentView = edrView
-window.orderFrontRegardless()
+        window = NSWindow(
+            contentRect: frame,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.ignoresMouseEvents = true
+        window.level = .screenSaver
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        window.hasShadow = false
+        window.hidesOnDeactivate = false
+        window.animationBehavior = .none
+        window.contentView = edrView
+        window.orderFrontRegardless()
 
-NotificationCenter.default.addObserver(
-    forName: NSApplication.willTerminateNotification,
-    object: nil, queue: nil
-) { _ in try? FileManager.default.removeItem(atPath: lockPath) }
+        menuController = MenuController(edrView: edrView)
+    }
 
-var menuController: MenuController?
-DispatchQueue.main.async {
-    menuController = MenuController(edrView: edrView)
+    func applicationWillTerminate(_ notification: Notification) {
+        try? FileManager.default.removeItem(atPath: lockPath)
+    }
 }
 
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
+let delegate = AppDelegate()
+app.delegate = delegate
 app.run()
