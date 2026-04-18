@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile
+        run: |
+          swiftc -O -o glow glow.swift \
+            -framework Cocoa \
+            -framework Metal \
+            -framework MetalKit \
+            -framework QuartzCore
+
+      - name: Build app bundle
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p Glow.app/Contents/MacOS
+          cp glow Glow.app/Contents/MacOS/glow
+          sed "s/__VERSION__/${VERSION}/g" glow.app/Contents/Info.plist > Glow.app/Contents/Info.plist
+
+      - name: Package
+        id: package
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent Glow.app Glow.app.zip
+          echo "sha256=$(shasum -a 256 Glow.app.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            Glow.app.zip
+
+      - name: Update Homebrew Cask
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN not set — skipping tap update."
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA256="${{ steps.package.outputs.sha256 }}"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/nmwcode/homebrew-tap.git" tap
+          mkdir -p tap/Casks
+          cat > tap/Casks/glow.rb << EOF
+          cask "glow" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+            url "https://github.com/nmwcode/glow/releases/download/v${VERSION}/Glow.app.zip"
+            name "Glow"
+            desc "Boost XDR/HDR display brightness via Metal overlay"
+            homepage "https://github.com/nmwcode/glow"
+
+            depends_on macos: ">= :sonoma"
+            depends_on arch: :arm64
+
+            app "Glow.app"
+
+            postflight do
+              system_command "/usr/bin/xattr",
+                             args: ["-dr", "com.apple.quarantine", "#{appdir}/Glow.app"]
+            end
+
+            zap trash: [
+              "~/Library/Preferences/com.glow.plist",
+              "~/Library/LaunchAgents/com.glow.plist",
+            ]
+          end
+          EOF
+          rm -f tap/Formula/glow.rb
+          cd tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git rm --ignore-unmatch Formula/glow.rb
+          git add Casks/glow.rb
+          git commit -m "Update glow cask to v${VERSION}" || echo "No changes to commit"
+          git push
