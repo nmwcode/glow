@@ -232,6 +232,10 @@ final class MenuController: NSObject {
     }
 }
 
+// ── App init — must happen before any NSWindow creation ──
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
+
 // ── Overlay window ──
 let frame = screen.frame
 let window = NSWindow(
@@ -255,9 +259,6 @@ let snappedBrightness = brightnessPresets.map(\.value)
 let edrView = EDRView(frame: frame, multiplier: snappedBrightness)
 window.contentView = edrView
 window.orderFrontRegardless()
-
-let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
 
 NotificationCenter.default.addObserver(
     forName: NSApplication.willTerminateNotification,
