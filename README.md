@@ -29,21 +29,22 @@ Glow exits gracefully on displays without EDR support.
 
 **Homebrew (recommended):**
 ```bash
-brew install nmwcode/tap/glow
+brew install --cask nmwcode/tap/glow
 ```
 
-**Manual:**
-```bash
-git clone https://github.com/nmwcode/glow
-cd glow
-swift glow.swift          # default: 200%
-swift glow.swift 1.5      # custom: 150%
-```
+Opens from Finder, Spotlight, or terminal (`/Applications/Glow.app/Contents/MacOS/glow`).
 
-**Auto-start on login (LaunchAgent, Homebrew install only):**
+**Auto-start on login (LaunchAgent):**
 ```bash
 cp com.glow.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.glow.plist
+```
+
+**Manual (requires Swift):**
+```bash
+git clone https://github.com/nmwcode/glow
+cd glow
+swift glow.swift
 ```
 
 ## Usage
@@ -80,10 +81,9 @@ At 200%, each pixel is doubled in luminance — the display drives its backlight
 
 **Homebrew:**
 ```bash
-brew uninstall nmwcode/tap/glow
-launchctl unload ~/Library/LaunchAgents/com.glow.plist 2>/dev/null
-rm -f ~/Library/LaunchAgents/com.glow.plist
-defaults delete com.glow
+brew uninstall --cask nmwcode/tap/glow
+# or with full cleanup:
+brew uninstall --zap --cask nmwcode/tap/glow
 ```
 
 **Manual:**

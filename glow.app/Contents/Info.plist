@@ -3,16 +3,24 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.glow</string>
+    <string>com.nmwcode.glow</string>
     <key>CFBundleName</key>
-    <string>glow</string>
+    <string>Glow</string>
+    <key>CFBundleDisplayName</key>
+    <string>Glow</string>
     <key>CFBundleExecutable</key>
     <string>glow</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>__VERSION__</string>
+    <key>CFBundleShortVersionString</key>
+    <string>__VERSION__</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
 </dict>
 </plist>

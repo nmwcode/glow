@@ -6,7 +6,7 @@
     <string>com.glow</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/homebrew/bin/glow</string>
+        <string>/Applications/Glow.app/Contents/MacOS/glow</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
