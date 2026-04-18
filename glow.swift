@@ -31,6 +31,16 @@ let brightnessPresets: [(label: String, value: Double)] = [
     ("200%", 2.00), ("250%", 2.50), ("300%", 3.00),
 ]
 
+let lockPath = "/tmp/com.glow.lock"
+if let pidStr = try? String(contentsOfFile: lockPath, encoding: .utf8),
+   let pid = pid_t(pidStr.trimmingCharacters(in: .whitespacesAndNewlines)),
+   kill(pid, 0) == 0 {
+    fputs("glow is already running (PID \(pid)).\n", stderr)
+    exit(0)
+}
+try? String(ProcessInfo.processInfo.processIdentifier)
+    .write(toFile: lockPath, atomically: true, encoding: .utf8)
+
 guard let screen = NSScreen.main else {
     fputs("No main screen found.\n", stderr)
     exit(1)
@@ -239,6 +249,11 @@ window.orderFrontRegardless()
 
 _ = __NSApplicationLoad()
 NSApp.setActivationPolicy(.accessory)
+
+NotificationCenter.default.addObserver(
+    forName: NSApplication.willTerminateNotification,
+    object: nil, queue: nil
+) { _ in try? FileManager.default.removeItem(atPath: lockPath) }
 
 var menuController: MenuController?
 DispatchQueue.main.async {
