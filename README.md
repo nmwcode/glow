@@ -40,7 +40,7 @@ swift glow.swift          # default: 200%
 swift glow.swift 1.5      # custom: 150%
 ```
 
-**Auto-start on login (LaunchAgent):**
+**Auto-start on login (LaunchAgent, Homebrew install only):**
 ```bash
 cp com.glow.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.glow.plist
@@ -78,9 +78,18 @@ At 200%, each pixel is doubled in luminance — the display drives its backlight
 
 ## Uninstall
 
+**Homebrew:**
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.glow.plist
-rm ~/Library/LaunchAgents/com.glow.plist
+brew uninstall nmwcode/tap/glow
+launchctl unload ~/Library/LaunchAgents/com.glow.plist 2>/dev/null
+rm -f ~/Library/LaunchAgents/com.glow.plist
+defaults delete com.glow
+```
+
+**Manual:**
+```bash
+launchctl unload ~/Library/LaunchAgents/com.glow.plist 2>/dev/null
+rm -f ~/Library/LaunchAgents/com.glow.plist
 defaults delete com.glow
 ```
 
