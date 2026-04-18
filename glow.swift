@@ -35,8 +35,17 @@ let lockPath = "/tmp/com.glow.lock"
 if let pidStr = try? String(contentsOfFile: lockPath, encoding: .utf8),
    let pid = pid_t(pidStr.trimmingCharacters(in: .whitespacesAndNewlines)),
    kill(pid, 0) == 0 {
-    fputs("glow is already running (PID \(pid)).\n", stderr)
-    exit(0)
+    var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+    var info = kinfo_proc()
+    var size = MemoryLayout<kinfo_proc>.size
+    sysctl(&mib, 4, &info, &size, nil, 0)
+    let name = withUnsafeBytes(of: info.kp_proc.p_comm) {
+        String(bytes: $0.prefix(while: { $0 != 0 }), encoding: .utf8) ?? ""
+    }
+    if name == "glow" {
+        fputs("glow is already running (PID \(pid)).\n", stderr)
+        exit(0)
+    }
 }
 try? String(ProcessInfo.processInfo.processIdentifier)
     .write(toFile: lockPath, atomically: true, encoding: .utf8)
